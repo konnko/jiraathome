@@ -29,9 +29,7 @@ defmodule JiraathomeWeb.BoardLiveTest do
 
     assert has_element?(view, "#column-researching #card-#{card.id}", "Новые детали")
 
-    view
-    |> element("#card-#{card.id} form")
-    |> render_change(%{card_id: card.id, status: "doing"})
+    render_hook(view, "move", %{card_id: card.id, status: "doing"})
 
     assert has_element?(view, "#column-doing #card-#{card.id}")
     render_hook(view, "move", %{card_id: card.id, status: "done"})

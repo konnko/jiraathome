@@ -153,36 +153,15 @@ defmodule JiraathomeWeb.BoardLive do
                 phx-click={JS.push_focus() |> JS.push("edit")}
                 phx-value-id={card.id}
               >
-                <span class="card-number">#{String.pad_leading(to_string(card.id), 3, "0")}</span>
                 <h3>{card.title}</h3>
-                <p class="card-author">Автор: {card.author_name || "не указан"}</p>
-                <p class="card-time">
-                  Создана
-                  <time datetime={DateTime.to_iso8601(card.inserted_at)}>{Time.moscow(
-                    card.inserted_at
-                  )}</time>
-                </p>
-                <p :if={card.updated_at != card.inserted_at} class="card-time">
-                  Изменена
-                  <time datetime={DateTime.to_iso8601(card.updated_at)}>{Time.moscow(card.updated_at)}</time>
-                </p>
               </button>
               <div :if={card.description not in [nil, ""]} class="card-description markdown-content">
                 {Phoenix.HTML.raw(JiraathomeWeb.Markdown.html(card.description))}
               </div>
-              <form id={"move-card-#{card.id}"} phx-change="move" class="card-status-form">
-                <input type="hidden" name="card_id" value={card.id} />
-                <select
-                  name="status"
-                  class="card-status"
-                  aria-label={"Столбец карточки #{card.title}"}
-                >
-                  {Phoenix.HTML.Form.options_for_select(
-                    Enum.map(@columns, fn {value, text} -> {text, value} end),
-                    card.status
-                  )}
-                </select>
-              </form>
+              <footer class="card-meta">
+                <Time.local id={"card-time-#{card.id}"} timestamp={card.updated_at} />
+                <span class="card-author">{card.author_name || "не указан"}</span>
+              </footer>
             </article>
             <p :if={Enum.all?(@cards, &(&1.status != status))} class="empty-column">Пока пусто</p>
           </div>
@@ -219,13 +198,7 @@ defmodule JiraathomeWeb.BoardLive do
             Автор: {@editing.author_name || "не указан"}
           </p>
           <p :if={@editing.id} class="editor-timestamps text-muted">
-            Создана
-            <time datetime={DateTime.to_iso8601(@editing.inserted_at)}>{Time.moscow(
-              @editing.inserted_at
-            )}</time><br /> Изменена
-            <time datetime={DateTime.to_iso8601(@editing.updated_at)}>{Time.moscow(
-              @editing.updated_at
-            )}</time>
+            Изменена <Time.local id="editing-updated-at" timestamp={@editing.updated_at} />
           </p>
           <.form for={@form} id="card-form" phx-submit="save" class="editor-form">
             <.input
@@ -286,9 +259,7 @@ defmodule JiraathomeWeb.BoardLive do
               <li :for={comment <- @comments} id={"comment-#{comment.id}"} class="comment">
                 <div class="comment-heading">
                   <strong>{comment.author_name}</strong>
-                  <time datetime={DateTime.to_iso8601(comment.inserted_at)}>
-                    {Time.moscow(comment.inserted_at)}
-                  </time>
+                  <Time.local id={"comment-time-#{comment.id}"} timestamp={comment.inserted_at} />
                 </div>
                 <p class="comment-body">{comment.body}</p>
               </li>

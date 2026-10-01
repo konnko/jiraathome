@@ -49,7 +49,7 @@ defmodule Jiraathome.SharedFile do
       sequence: update.id,
       data: Base.encode64(update.data),
       author: update.author_name,
-      saved_at: JiraathomeWeb.Time.moscow(update.inserted_at)
+      saved_at: DateTime.to_iso8601(update.inserted_at)
     }
   end
 end

@@ -5,6 +5,7 @@ import {collab, collabServiceCtx} from "@milkdown/plugin-collab"
 import "@milkdown/crepe/theme/common/style.css"
 import "@milkdown/crepe/theme/frame.css"
 import * as Y from "yjs"
+import {formatLocalTime} from "./local_time"
 import {FileSync} from "./file_sync"
 
 export const SharedFile = {
@@ -16,7 +17,7 @@ export const SharedFile = {
       storage: window.sessionStorage,
       status: text => { this.el.querySelector("#file-status").textContent = text },
       saved: update => {
-        this.el.querySelector("#file-saved-at").textContent = `${update.author} · ${update.saved_at}`
+        this.el.querySelector("#file-saved-at").textContent = `${update.author} · ${formatLocalTime(update.saved_at)}`
       }
     })
     this.handleEvent("file_update", update => this.sync.receive(update))

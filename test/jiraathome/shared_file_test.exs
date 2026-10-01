@@ -11,7 +11,7 @@ defmodule Jiraathome.SharedFileTest do
     assert_receive {:file_updated, ^second}
     assert first.sequence < second.sequence
     assert first.author == "Анна"
-    assert first.saved_at =~ "МСК"
+    assert {:ok, _, 0} = DateTime.from_iso8601(first.saved_at)
     assert SharedFile.updates_after(0) == [first, second]
     assert SharedFile.updates_after(first.sequence) == [second]
 

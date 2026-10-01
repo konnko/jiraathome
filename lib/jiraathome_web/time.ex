@@ -1,9 +1,14 @@
 defmodule JiraathomeWeb.Time do
-  @moduledoc "Formatting application timestamps in Moscow time (UTC+03:00)."
+  use Phoenix.Component
 
-  def moscow(%DateTime{} = timestamp) do
-    timestamp
-    |> DateTime.add(3 * 60 * 60, :second)
-    |> Calendar.strftime("%d.%m.%Y %H:%M МСК")
+  attr :id, :string, required: true
+  attr :timestamp, DateTime, required: true
+
+  def local(assigns) do
+    ~H"""
+    <time id={@id} datetime={DateTime.to_iso8601(@timestamp)} phx-hook="LocalTime">
+      {Calendar.strftime(@timestamp, "%d.%m.%y %H:%M UTC")}
+    </time>
+    """
   end
 end
