@@ -85,6 +85,8 @@ button, a, input, textarea, select { @apply focus-visible:outline-2 focus-visibl
 .add-card { @apply flex h-7 w-7 items-center justify-center rounded-md text-xl transition-colors hover:bg-base-300; }
 .column-cards { @apply flex flex-col gap-3; }
 .task-card { @apply cursor-pointer overflow-hidden border border-base-300 bg-base-100 shadow-xs transition-shadow hover:shadow-md; }
+.task-card.is-drag-placeholder { @apply border-dashed border-base-content/25 bg-base-300/40 shadow-none; }
+.task-card.is-drag-placeholder > * { visibility: hidden; }
 .card-content { @apply block w-full px-2 py-1.5 text-left; overflow-wrap: anywhere; }
 .card-content h3 { @apply text-sm font-semibold leading-relaxed; }
 .card-meta { @apply flex items-baseline justify-between gap-2 px-2 pb-2 pt-1 text-[10px] text-base-content/60; }
@@ -116,6 +118,7 @@ button, a, input, textarea, select { @apply focus-visible:outline-2 focus-visibl
 .markdown-content input[type="checkbox"] { vertical-align: middle; margin-right: 0.4em; }
 .markdown-content img { max-width: 100%; height: auto; }
 .empty-column { @apply py-14 text-center text-xs; color: #9b9286; }
+.column-cards:has(.task-card) .empty-column { display: none; }
 .board-footer { @apply mt-7 text-xs leading-relaxed; color: #8d8173; }
 .editor-backdrop { @apply fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-neutral/30 p-4 backdrop-blur-xs; }
 .editor-panel { @apply my-auto w-full max-w-3xl p-6 shadow-xl; max-height: calc(100dvh - 2rem); overflow-y: auto; }

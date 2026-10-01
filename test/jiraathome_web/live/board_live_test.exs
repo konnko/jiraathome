@@ -29,10 +29,10 @@ defmodule JiraathomeWeb.BoardLiveTest do
 
     assert has_element?(view, "#column-backlog #card-#{card.id}", "Новые детали")
 
-    render_hook(view, "move", %{card_id: card.id, status: "doing"})
+    render_hook(view, "move", %{card_id: card.id, status: "doing", index: 0})
 
     assert has_element?(view, "#column-doing #card-#{card.id}")
-    render_hook(view, "move", %{card_id: card.id, status: "done"})
+    render_hook(view, "move", %{card_id: card.id, status: "done", index: 0})
     assert has_element?(view, "#column-done #card-#{card.id}")
 
     view |> element("#card-#{card.id} .card-content") |> render_click()

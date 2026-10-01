@@ -26,44 +26,90 @@ const Board = {
       event.dataTransfer.effectAllowed = "move"
       this.clearDrag()
       this.draggedCardId = card.dataset.cardId
-      // Let the browser capture its drag preview before hiding the source.
+      this.dragOrigin = {parent: card.parentElement, next: card.nextElementSibling}
+      // Let the browser capture its drag preview before turning the source into a placeholder.
       this.dragTimer = setTimeout(() => {
         this.dragTimer = null
-        this.hideDragSource()
+        this.markDragSource()
       }, 0)
     })
     this.onDragEnd = () => {
       this.ignoreClickUntil = Date.now() + 150
+      // Dropped outside the board: put the card back where it was picked up.
+      if (this.dragOrigin) this.animateReorder(() => this.restoreDragOrigin())
       this.clearDrag()
     }
     document.addEventListener("dragend", this.onDragEnd)
     this.el.addEventListener("dragover", event => {
-      if (event.target.closest("[data-status]")) {
-        event.preventDefault()
-        event.dataTransfer.dropEffect = "move"
-      }
+      const column = event.target.closest("[data-status]")
+      if (!column || !this.draggedCardId) return
+      event.preventDefault()
+      event.dataTransfer.dropEffect = "move"
+      this.placeDraggedCard(column, event.clientY)
     })
     this.el.addEventListener("drop", event => {
-      const column = event.target.closest("[data-status]")
-      const id = event.dataTransfer.getData("text/plain")
-      if (!column || !/^\d+$/.test(id)) return
+      const card = this.draggedCard()
+      const column = card?.closest("[data-status]")
+      if (!column) return
       event.preventDefault()
+      const index = [...column.querySelectorAll("[data-card-id]")].indexOf(card)
+      this.dragOrigin = null
       this.clearDrag()
-      this.pushEvent("move", {card_id: id, status: column.dataset.status})
+      this.pushEvent("move", {card_id: card.dataset.cardId, status: column.dataset.status, index})
     })
   },
-  hideDragSource() {
-    const card = this.el.querySelector(`[data-card-id="${this.draggedCardId}"]`)
-    if (card) card.style.opacity = "0"
+  draggedCard() {
+    return this.draggedCardId && this.el.querySelector(`[data-card-id="${this.draggedCardId}"]`)
+  },
+  // Moves the dragged card in the DOM to the slot under the pointer, so the drop lands exactly there.
+  placeDraggedCard(column, pointerY) {
+    const card = this.draggedCard()
+    const list = column.querySelector(".column-cards")
+    if (!card) return
+    // Layout positions (offsetTop) ignore running animation transforms, so cards do not flicker.
+    const listTop = list.getBoundingClientRect().top - list.offsetTop
+    const before = [...list.querySelectorAll("[data-card-id]")]
+      .filter(other => other !== card)
+      .find(other => pointerY < listTop + other.offsetTop + other.offsetHeight / 2) || null
+    if (card.parentElement === list && card.nextElementSibling === before) return
+    this.animateReorder(() => list.insertBefore(card, before))
+  },
+  // FLIP: remember where cards were, apply the DOM change, then slide them from old to new spots.
+  animateReorder(reorder) {
+    const cards = [...this.el.querySelectorAll("[data-card-id]")]
+    const before = new Map(cards.map(card => [card, card.getBoundingClientRect()]))
+    reorder()
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return
+    cards.forEach(card => {
+      const from = before.get(card)
+      const to = card.getBoundingClientRect()
+      const dx = from.left - to.left
+      const dy = from.top - to.top
+      if (!dx && !dy) return
+      card.animate(
+        [{transform: `translate(${dx}px, ${dy}px)`}, {transform: "translate(0, 0)"}],
+        {duration: 180, easing: "cubic-bezier(0.2, 0, 0, 1)"}
+      )
+    })
+  },
+  restoreDragOrigin() {
+    const card = this.draggedCard()
+    const {parent, next} = this.dragOrigin
+    if (card) parent.insertBefore(card, next?.parentElement === parent ? next : null)
+    this.dragOrigin = null
+  },
+  markDragSource() {
+    this.draggedCard()?.classList.add("is-drag-placeholder")
   },
   clearDrag() {
     clearTimeout(this.dragTimer)
     this.dragTimer = null
-    this.el.querySelectorAll("[data-card-id]").forEach(card => card.style.removeProperty("opacity"))
+    this.el.querySelectorAll(".is-drag-placeholder").forEach(card => card.classList.remove("is-drag-placeholder"))
     this.draggedCardId = null
+    this.dragOrigin = null
   },
   updated() {
-    if (this.draggedCardId && !this.dragTimer) this.hideDragSource()
+    if (this.draggedCardId && !this.dragTimer) this.markDragSource()
   },
   destroyed() {
     this.clearDrag()

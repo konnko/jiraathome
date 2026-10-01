@@ -59,8 +59,8 @@ defmodule JiraathomeWeb.BoardLive do
     end
   end
 
-  def handle_event("move", %{"card_id" => id, "status" => status}, socket) do
-    Board.move_card!(Board.get_card!(id), status)
+  def handle_event("move", %{"card_id" => id, "status" => status, "index" => index}, socket) do
+    Board.move_card!(Board.get_card!(id), status, index)
     {:noreply, assign(socket, cards: Board.list_cards!())}
   end
 

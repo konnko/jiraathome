@@ -18,7 +18,7 @@ defmodule Jiraathome.BoardTest do
     assert Enum.map(Board.list_cards!(), & &1.id) == [card.id]
 
     for {status, _label} <- Board.columns() do
-      assert {:ok, updated} = Board.move_card(Board.get_card!(card.id), status)
+      assert {:ok, updated} = Board.move_card(Board.get_card!(card.id), status, 0)
       assert updated.status == status
       assert Board.get_card!(card.id).status == status
     end
@@ -28,6 +28,26 @@ defmodule Jiraathome.BoardTest do
     assert updated.description == ""
     assert :ok = Board.delete_card!(updated)
     assert [] = Board.list_cards!()
+  end
+
+  test "new cards go on top and a moved card lands at the given index" do
+    add = fn status, title -> Board.add_card!(status, "Анна", %{title: title}) end
+    c = add.(:doing, "C")
+    b = add.(:doing, "B")
+    a = add.(:doing, "A")
+    moved = add.(:backlog, "M")
+    column_titles = fn -> Enum.map(Board.list_column_cards!(:doing), & &1.title) end
+
+    assert column_titles.() == ["A", "B", "C"]
+    Board.move_card!(moved, :doing, 1)
+    assert column_titles.() == ["A", "M", "B", "C"]
+    Board.move_card!(Board.get_card!(moved.id), :doing, 3)
+    assert column_titles.() == ["A", "B", "C", "M"]
+    Board.move_card!(Board.get_card!(moved.id), :doing, 0)
+    assert column_titles.() == ["M", "A", "B", "C"]
+    Board.move_card!(Board.get_card!(c.id), :doing, 2)
+    assert column_titles.() == ["M", "A", "C", "B"]
+    assert Enum.map(Board.list_cards!(), & &1.id) == [moved.id, a.id, c.id, b.id]
   end
 
   test "a title is required, including when editing" do

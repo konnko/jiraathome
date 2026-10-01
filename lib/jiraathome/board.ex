@@ -3,11 +3,12 @@ defmodule Jiraathome.Board do
 
   resources do
     resource Jiraathome.Board.Card do
-      define :list_cards, action: :list_newest_first
+      define :list_cards, action: :list_in_board_order
+      define :list_column_cards, action: :list_column, args: [:status]
       define :get_card, action: :read, get_by: [:id]
       define :add_card, action: :add, args: [:status, :author_name]
       define :edit_card, action: :edit
-      define :move_card, action: :move, args: [:status]
+      define :move_card, action: :move, args: [:status, :index]
       define :delete_card, action: :destroy
     end
 
