@@ -2,8 +2,6 @@
   <div class="login-page">
     <section class="login-card card bg-base-100">
       <span class="eyebrow">JIRAATHOME</span>
-      <h1>Место для ваших задач</h1>
-      <p class="text-muted">Введите имя и общий пароль, чтобы открыть доску.</p>
       <.form for={%{}} action={~p"/login"} id="login-form" class="editor-form">
         <.input
           name="name"
@@ -26,7 +24,6 @@
         <button type="submit" class="btn btn-primary w-full">Открыть доску
         <span aria-hidden="true">↗</span></button>
       </.form>
-      <p class="login-note">Одна доска для всех. Всё нужное — под рукой.</p>
     </section>
   </div>
 </Layouts.app>
