@@ -1,0 +1,13 @@
+{
+  "private": true,
+  "scripts": {
+    "test": "node --test js/*.test.js"
+  },
+  "dependencies": {
+    "@milkdown/crepe": "7.22.2",
+    "@milkdown/kit": "7.22.2",
+    "@milkdown/plugin-collab": "7.22.2",
+    "yjs": "13.6.33"
+  },
+  "name": "jiraathome"
+}
