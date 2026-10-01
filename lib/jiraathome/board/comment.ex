@@ -21,13 +21,13 @@ defmodule Jiraathome.Board.Comment do
   actions do
     defaults [:read]
 
-    read :for_card do
+    read :list_for_card do
       argument :card_id, :integer, allow_nil?: false
       filter expr(card_id == ^arg(:card_id))
       prepare build(sort: [id: :asc])
     end
 
-    create :create do
+    create :add do
       accept [:body]
       argument :card_id, :integer, allow_nil?: false
       argument :author_name, :string, allow_nil?: false

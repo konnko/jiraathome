@@ -4,7 +4,7 @@ defmodule JiraathomeWeb.MediaController do
   alias Jiraathome.Files.Storage
 
   def create(conn, %{"file" => %Plug.Upload{} = upload}) do
-    case Files.store_file(upload) do
+    case Files.store_upload(upload) do
       {:ok, media} ->
         json(conn, %{
           id: media.id,
@@ -13,8 +13,7 @@ defmodule JiraathomeWeb.MediaController do
           type: media.content_type
         })
 
-      {:error, %Ash.Error.Invalid{} = error} ->
-        Jiraathome.ErrorReport.log("upload", error)
+      {:error, %Ash.Error.Invalid{}} ->
         conn |> put_status(413) |> json(%{error: "Максимальный размер файла — 20 МБ"})
 
       {:error, error} ->

@@ -27,7 +27,7 @@ defmodule Jiraathome.FilesTest do
   test "weekly job removes old orphan files from disk and database, retaining fresh uploads" do
     old = file(days_unused: 8)
     fresh = file(days_unused: 0)
-    assert :ok = perform_job(Files.CleanupJob, %{})
+    assert :ok = perform_job(Files.UnreferencedFilesCleanupJob, %{})
     refute File.exists?(Storage.path(old))
     assert is_nil(Files.get_file!(old.id, not_found_error?: false))
     assert File.exists?(Storage.path(fresh))
@@ -39,7 +39,7 @@ defmodule Jiraathome.FilesTest do
     markdown = file(days_unused: 20)
     shared = file(days_unused: 20)
 
-    Board.create_card!("Автор", %{
+    Board.add_card!(:backlog, "Автор", %{
       title: "Files",
       attachment_ids: [attachment.id],
       description: "![image](#{Storage.url(markdown)})"
@@ -57,7 +57,7 @@ defmodule Jiraathome.FilesTest do
 
     save_doc(doc, "image")
 
-    assert Files.cleanup_unused_files!() == 0
+    assert Files.clean_up_unreferenced_files!() == 0
 
     for item <- [attachment, markdown, shared] do
       assert File.exists?(Storage.path(item))
@@ -67,14 +67,17 @@ defmodule Jiraathome.FilesTest do
 
   test "detaching starts a grace period and shared references protect the same file" do
     attachment = file(days_unused: 20)
-    first = Board.create_card!("Автор", %{title: "First", attachment_ids: [attachment.id]})
-    second = Board.create_card!("Автор", %{title: "Second", attachment_ids: [attachment.id]})
-    Files.cleanup_unused_files!()
+    first = Board.add_card!(:backlog, "Автор", %{title: "First", attachment_ids: [attachment.id]})
+
+    second =
+      Board.add_card!(:backlog, "Автор", %{title: "Second", attachment_ids: [attachment.id]})
+
+    Files.clean_up_unreferenced_files!()
     Board.delete_card!(first)
-    Files.cleanup_unused_files!()
+    Files.clean_up_unreferenced_files!()
     assert is_nil(Files.get_file!(attachment.id).orphaned_at)
-    Board.update_card!(second, %{attachment_ids: []})
-    assert Files.cleanup_unused_files!() == 0
+    Board.edit_card!(second, %{attachment_ids: []})
+    assert Files.clean_up_unreferenced_files!() == 0
     assert Files.get_file!(attachment.id).orphaned_at
     assert File.exists?(Storage.path(attachment))
   end
@@ -94,14 +97,14 @@ defmodule Jiraathome.FilesTest do
     save_doc(doc, "before-delete")
     :ok = Yex.XmlFragment.delete(fragment, 0, 1)
     save_doc(doc, "after-delete")
-    assert Files.cleanup_unused_files!() == 1
+    assert Files.clean_up_unreferenced_files!() == 1
     refute File.exists?(Storage.path(image))
   end
 
   test "a corrupt document aborts cleanup instead of deleting possibly referenced files" do
     file = file(days_unused: 20)
     Documents.append_update!(%{token: "bad", data: <<255>>, author_name: "Автор"})
-    assert_raise Ash.Error.Unknown, fn -> Files.cleanup_unused_files!() end
+    assert_raise Ash.Error.Unknown, fn -> Files.clean_up_unreferenced_files!() end
     assert File.exists?(Storage.path(file))
     assert Files.get_file!(file.id)
   end
@@ -109,7 +112,7 @@ defmodule Jiraathome.FilesTest do
   test "missing physical files can be cleaned up safely" do
     file = file(days_unused: 20)
     File.rm!(Storage.path(file))
-    assert Files.cleanup_unused_files!() == 1
+    assert Files.clean_up_unreferenced_files!() == 1
     assert is_nil(Files.get_file!(file.id, not_found_error?: false))
   end
 

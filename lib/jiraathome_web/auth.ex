@@ -2,11 +2,6 @@ defmodule JiraathomeWeb.Auth do
   import Plug.Conn
   import Phoenix.Controller
 
-  def valid_password?(password) do
-    expected = Application.fetch_env!(:jiraathome, :password)
-    Plug.Crypto.secure_compare(:crypto.hash(:sha256, password), :crypto.hash(:sha256, expected))
-  end
-
   def require_password(conn, _opts) do
     if authenticated?(get_session(conn)) do
       # Refresh the persistent browser cookie; the signed session has no server-side expiry.

@@ -1,4 +1,5 @@
-defmodule Jiraathome.SharedFile.Update do
+defmodule Jiraathome.Documents.SharedFileUpdate do
+  @moduledoc "One persisted Yjs update of the shared document, in arrival order."
   use Ash.Resource,
     otp_app: :jiraathome,
     domain: Jiraathome.Documents,
@@ -12,13 +13,14 @@ defmodule Jiraathome.SharedFile.Update do
   actions do
     defaults [:read]
 
-    read :after_sequence do
+    read :list_after_sequence do
       argument :sequence, :integer, allow_nil?: false
       filter expr(id > ^arg(:sequence))
       prepare build(sort: [id: :asc])
     end
 
     create :append do
+      description "The token lets a reconnecting client resend a batch without duplicating it."
       accept [:token, :data, :author_name]
     end
   end

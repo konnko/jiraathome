@@ -3,7 +3,6 @@ defmodule JiraathomeWeb.BoardLive do
   use JiraathomeWeb, :live_view
   alias Jiraathome.Board
   alias Jiraathome.Board.Card
-  alias Jiraathome.Board.Comment
   alias JiraathomeWeb.Time
 
   @impl true
@@ -23,27 +22,26 @@ defmodule JiraathomeWeb.BoardLive do
   end
 
   @impl true
-  def handle_event("new", params, socket) do
-    card = %Card{status: params["status"] || "backlog"}
-
+  def handle_event("new", %{"status" => status}, socket) do
     form =
-      AshPhoenix.Form.for_create(Card, :create, as: "card", post_process_errors: &form_error/3)
+      Board.form_to_add_card(status, socket.assigns.current_name,
+        as: "card",
+        post_process_errors: &form_error/3
+      )
 
-    {:noreply, assign(socket, editing: card, form: to_form(form))}
+    {:noreply, assign(socket, editing: %Card{status: status}, form: to_form(form))}
   end
 
   def handle_event("edit", %{"id" => id}, socket) do
     card = Board.get_card!(id)
-
-    form =
-      AshPhoenix.Form.for_update(card, :update, as: "card", post_process_errors: &form_error/3)
+    form = Board.form_to_edit_card(card, as: "card", post_process_errors: &form_error/3)
 
     {:noreply,
      assign(socket,
        editing: card,
        form: to_form(form),
        comments: Board.list_comments!(card.id),
-       comment_form: comment_form()
+       comment_form: comment_form(card, socket.assigns.current_name)
      )}
   end
 
@@ -51,23 +49,8 @@ defmodule JiraathomeWeb.BoardLive do
     {:noreply, assign(socket, editing: nil, form: nil)}
   end
 
-  def handle_event("save", %{"card" => attrs}, socket) do
-    attrs =
-      Map.take(attrs, ["title", "description", "attachment_ids"])
-      |> Map.update("attachment_ids", [], fn ids ->
-        ids |> Enum.reject(&(&1 == "")) |> Enum.uniq()
-      end)
-
-    attrs =
-      if socket.assigns.editing.id do
-        attrs
-      else
-        attrs
-        |> Map.put("status", socket.assigns.editing.status)
-        |> Map.put("author_name", socket.assigns.current_name)
-      end
-
-    case AshPhoenix.Form.submit(socket.assigns.form.source, params: attrs) do
+  def handle_event("save", %{"card" => params}, socket) do
+    case AshPhoenix.Form.submit(socket.assigns.form.source, params: params) do
       {:ok, _card} ->
         {:noreply, assign(socket, editing: nil, form: nil, cards: Board.list_cards!())}
 
@@ -86,22 +69,18 @@ defmodule JiraathomeWeb.BoardLive do
     {:noreply, assign(socket, editing: nil, form: nil, cards: Board.list_cards!())}
   end
 
-  def handle_event("validate_comment", %{"comment" => attrs}, socket) do
-    form =
-      AshPhoenix.Form.validate(socket.assigns.comment_form.source, comment_params(socket, attrs))
-
+  def handle_event("validate_comment", %{"comment" => params}, socket) do
+    form = AshPhoenix.Form.validate(socket.assigns.comment_form.source, params)
     {:noreply, assign(socket, comment_form: to_form(form))}
   end
 
-  def handle_event("add_comment", %{"comment" => attrs}, socket) do
-    case AshPhoenix.Form.submit(socket.assigns.comment_form.source,
-           params: comment_params(socket, attrs)
-         ) do
-      {:ok, _comment} ->
+  def handle_event("add_comment", %{"comment" => params}, socket) do
+    case AshPhoenix.Form.submit(socket.assigns.comment_form.source, params: params) do
+      {:ok, comment} ->
         {:noreply,
          assign(socket,
-           comments: Board.list_comments!(socket.assigns.editing.id),
-           comment_form: comment_form()
+           comments: Board.list_comments!(comment.card_id),
+           comment_form: comment_form(socket.assigns.editing, socket.assigns.current_name)
          )}
 
       {:error, form} ->
@@ -120,17 +99,10 @@ defmodule JiraathomeWeb.BoardLive do
     {:noreply, assign(socket, cards: Board.list_cards!(), comments: comments)}
   end
 
-  defp comment_form do
-    Comment
-    |> AshPhoenix.Form.for_create(:create, as: "comment", post_process_errors: &form_error/3)
+  defp comment_form(card, author_name) do
+    card.id
+    |> Board.form_to_add_comment(author_name, as: "comment", post_process_errors: &form_error/3)
     |> to_form()
-  end
-
-  defp comment_params(socket, attrs) do
-    attrs
-    |> Map.take(["body"])
-    |> Map.put("card_id", socket.assigns.editing.id)
-    |> Map.put("author_name", socket.assigns.current_name)
   end
 
   defp form_error(_form, _path, {field, message, vars}) do

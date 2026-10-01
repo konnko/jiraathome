@@ -17,7 +17,7 @@ defmodule JiraathomeWeb.SessionController do
       |> put_status(:unprocessable_entity)
       |> render(:new, name: name, name_error: "Введите имя", error: nil)
     else
-      case Jiraathome.Login.check_password(conn.remote_ip, password) do
+      case Jiraathome.Login.check_password(to_string(:inet.ntoa(conn.remote_ip)), password) do
         {:ok, true} ->
           conn
           |> configure_session(renew: true)
@@ -30,7 +30,7 @@ defmodule JiraathomeWeb.SessionController do
           |> put_status(:unprocessable_entity)
           |> render(:new, name: name, name_error: nil, error: "Неверный пароль")
 
-        {:error, :rate_limited} ->
+        {:error, %Ash.Error.Forbidden{errors: [%AshRateLimiter.LimitExceeded{}]}} ->
           conn
           |> put_resp_header("retry-after", "3600")
           |> put_status(:too_many_requests)
@@ -38,15 +38,6 @@ defmodule JiraathomeWeb.SessionController do
             name: name,
             name_error: nil,
             error: "Слишком много попыток. Доступно 3 попытки в час. Попробуйте позже."
-          )
-
-        {:error, _error} ->
-          conn
-          |> put_status(:service_unavailable)
-          |> render(:new,
-            name: name,
-            name_error: nil,
-            error: "Вход временно недоступен. Попробуйте позже."
           )
       end
     end

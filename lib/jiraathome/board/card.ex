@@ -14,17 +14,25 @@ defmodule Jiraathome.Board.Card do
   actions do
     defaults [:read]
 
-    read :list do
+    read :list_newest_first do
       prepare build(sort: [id: :desc])
     end
 
-    create :create do
-      accept [:title, :description, :status, :attachment_ids]
+    create :add do
+      description "Добавляет карточку в колонку, где нажали «+», от имени вошедшего."
+      accept [:title, :description, :attachment_ids]
+
+      argument :status, :atom,
+        allow_nil?: false,
+        constraints: [one_of: [:backlog, :researching, :doing, :done]]
+
       argument :author_name, :string, allow_nil?: false
+      change set_attribute(:status, arg(:status))
       change set_attribute(:author_name, arg(:author_name))
     end
 
-    update :update do
+    update :edit do
+      description "Правка содержимого в редакторе. Колонка и автор здесь не меняются."
       accept [:title, :description, :attachment_ids]
     end
 
@@ -61,7 +69,13 @@ defmodule Jiraathome.Board.Card do
       public?: true,
       constraints: [one_of: [:backlog, :researching, :doing, :done]]
 
-    attribute :attachment_ids, {:array, :string}, default: [], allow_nil?: false, public?: true
+    # The editor always submits a blank hidden input so that removing every attachment works.
+    attribute :attachment_ids, {:array, :string},
+      default: [],
+      allow_nil?: false,
+      public?: true,
+      constraints: [remove_nil_items?: true]
+
     create_timestamp :inserted_at, type: :utc_datetime
     update_timestamp :updated_at, type: :utc_datetime
   end

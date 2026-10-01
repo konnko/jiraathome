@@ -24,7 +24,9 @@ config :jiraathome, Oban,
   engine: Oban.Engines.Lite,
   notifier: Oban.Notifiers.Isolated,
   queues: [maintenance: 1],
-  plugins: [{Oban.Plugins.Cron, crontab: [{"0 3 * * 0", Jiraathome.Files.CleanupJob}]}]
+  plugins: [
+    {Oban.Plugins.Cron, crontab: [{"0 3 * * 0", Jiraathome.Files.UnreferencedFilesCleanupJob}]}
+  ]
 
 # Configure the endpoint
 config :jiraathome, JiraathomeWeb.Endpoint,

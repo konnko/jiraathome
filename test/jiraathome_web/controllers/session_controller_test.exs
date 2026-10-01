@@ -43,11 +43,13 @@ defmodule JiraathomeWeb.SessionControllerTest do
   test "concurrent attempts share the same budget", %{conn: conn} do
     results =
       1..10
-      |> Task.async_stream(fn _ -> Jiraathome.Login.check_password(conn.remote_ip, "wrong") end)
+      |> Task.async_stream(fn _ ->
+        Jiraathome.Login.check_password(to_string(:inet.ntoa(conn.remote_ip)), "wrong")
+      end)
       |> Enum.map(fn {:ok, result} -> result end)
 
     assert Enum.count(results, &(&1 == {:ok, false})) == 3
-    assert Enum.count(results, &(&1 == {:error, :rate_limited})) == 7
+    assert Enum.count(results, &match?({:error, %Ash.Error.Forbidden{}}, &1)) == 7
   end
 
   test "the board redirects visitors to login", %{conn: conn} do

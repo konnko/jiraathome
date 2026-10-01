@@ -1,20 +1,25 @@
 defmodule Jiraathome.Board do
-  use Ash.Domain, otp_app: :jiraathome
+  use Ash.Domain, otp_app: :jiraathome, extensions: [AshPhoenix]
 
   resources do
     resource Jiraathome.Board.Card do
-      define :list_cards, action: :list
+      define :list_cards, action: :list_newest_first
       define :get_card, action: :read, get_by: [:id]
-      define :create_card, action: :create, args: [:author_name]
-      define :update_card, action: :update
+      define :add_card, action: :add, args: [:status, :author_name]
+      define :edit_card, action: :edit
       define :move_card, action: :move, args: [:status]
       define :delete_card, action: :destroy
     end
 
     resource Jiraathome.Board.Comment do
-      define :list_comments, action: :for_card, args: [:card_id]
-      define :create_comment, action: :create, args: [:card_id, :author_name]
+      define :list_comments, action: :list_for_card, args: [:card_id]
+      define :add_comment, action: :add, args: [:card_id, :author_name]
     end
+  end
+
+  forms do
+    form :add_card, args: [:status, :author_name]
+    form :add_comment, args: [:card_id, :author_name]
   end
 
   def columns do

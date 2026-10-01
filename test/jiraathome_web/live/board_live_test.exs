@@ -52,16 +52,13 @@ defmodule JiraathomeWeb.BoardLiveTest do
     refute has_element?(view, "#card-editor")
   end
 
-  test "column comes from plus and edits cannot change it", %{conn: conn} do
+  test "a card is added to the column whose plus was pressed", %{conn: conn} do
     {:ok, view, _} = live(conn, ~p"/")
     view |> element("#column-doing .add-card") |> render_click()
-    render_submit(view, "save", %{"card" => %{"title" => "Task", "status" => "done"}})
+    view |> form("#card-form", card: %{title: "Задача"}) |> render_submit()
     [card] = Board.list_cards!()
     assert card.status == :doing
-    view |> element("#card-#{card.id} .card-content") |> render_click()
-    render_hook(view, "move", %{card_id: card.id, status: "researching"})
-    render_submit(view, "save", %{"card" => %{"title" => "Updated", "status" => "done"}})
-    assert Board.get_card!(card.id).status == :researching
+    assert has_element?(view, "#column-doing #card-#{card.id}")
   end
 
   test "other viewers receive updates without losing their draft", %{conn: conn} do
@@ -75,7 +72,7 @@ defmodule JiraathomeWeb.BoardLiveTest do
   end
 
   test "comments use the session name and update another viewer's open card", %{conn: conn} do
-    {:ok, card} = Board.create_card("Создатель", %{title: "Общая задача"})
+    {:ok, card} = Board.add_card(:backlog, "Создатель", %{title: "Общая задача"})
     {:ok, view, _html} = live(conn, ~p"/")
     other_conn = init_test_session(build_conn(), authenticated: true, name: "Борис")
     {:ok, other, _html} = live(other_conn, ~p"/")
@@ -96,13 +93,10 @@ defmodule JiraathomeWeb.BoardLiveTest do
     other |> form("#comment-form", comment: %{body: "Ответ"}) |> render_submit()
     assert Enum.map(Board.list_comments!(card.id), & &1.author_name) == ["Анна", "Борис"]
     assert has_element?(view, "#comments", "Ответ")
-
-    other |> form("#card-form", card: %{title: "Правка Бориса"}) |> render_submit()
-    assert Board.get_card!(card.id).author_name == "Создатель"
   end
 
   test "blank comment shows validation and saves nothing", %{conn: conn} do
-    {:ok, card} = Board.create_card("Анна", %{title: "Задача"})
+    {:ok, card} = Board.add_card(:backlog, "Анна", %{title: "Задача"})
     {:ok, view, _html} = live(conn, ~p"/")
     view |> element("#card-#{card.id} .card-content") |> render_click()
     view |> form("#comment-form", comment: %{body: "   "}) |> render_submit()

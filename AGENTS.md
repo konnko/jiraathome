@@ -10,7 +10,7 @@ This is a web application written using the Phoenix web framework and Ash Framew
 - When writing Ash Framework resources, make actions as if they are an API. They better do singular thing
 - Give functions/actions/variables precise names that explain what they do/return
 - Don't write checks/barriers/rules or other logic that handle extremely unlikely. Keep code straightforward and simple, for extreme cases we have customer support
-- Make sure unexpected errors crash the server. When handling expected errors, do it using ErrorReport module
+- Make sure unexpected errors crash the server
 
 ### Phoenix v1.8 guidelines
 

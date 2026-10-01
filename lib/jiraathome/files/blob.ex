@@ -4,6 +4,8 @@ defmodule Jiraathome.Files.Blob do
     domain: Jiraathome.Files,
     data_layer: AshSqlite.DataLayer
 
+  alias Jiraathome.Files.Blob.{Actions, Changes, Validations}
+
   sqlite do
     table "media"
     repo Jiraathome.Repo
@@ -16,19 +18,22 @@ defmodule Jiraathome.Files.Blob do
   actions do
     defaults [:read]
 
-    read :by_ids do
+    read :list_by_ids do
       argument :ids, {:array, :string}, allow_nil?: false
       filter expr(id in ^arg(:ids))
       prepare build(sort: [inserted_at: :asc])
     end
 
-    action :store, :struct do
+    action :store_upload, :struct do
+      description "Копирует загрузку в хранилище и регистрирует её как пока ни к чему не привязанный файл."
       constraints instance_of: __MODULE__
       argument :upload, :struct, allow_nil?: false, constraints: [instance_of: Plug.Upload]
-      run Jiraathome.Files.Store
+      validate Validations.UploadWithinSizeLimit
+      run Actions.StoreUpload
     end
 
-    create :register do
+    create :register_stored do
+      description "Запись о файле, который уже лежит в хранилище. Отсчёт срока хранения начинается сразу."
       accept [:id, :name, :content_type, :size]
       change set_attribute(:orphaned_at, &DateTime.utc_now/0)
     end
@@ -41,13 +46,13 @@ defmodule Jiraathome.Files.Blob do
       change set_attribute(:orphaned_at, nil)
     end
 
-    destroy :hard_delete do
-      require_atomic? false
-      change Jiraathome.Files.DeleteStoredFile
+    destroy :delete_with_stored_contents do
+      change Changes.DeleteStoredContents
     end
 
-    action :cleanup, :integer do
-      run Jiraathome.Files.Cleanup
+    action :clean_up_unreferenced, :integer do
+      description "Помечает неиспользуемые файлы и удаляет те, что не используются больше недели. Возвращает число удалённых."
+      run Actions.CleanUpUnreferenced
     end
   end
 

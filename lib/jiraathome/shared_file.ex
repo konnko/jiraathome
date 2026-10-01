@@ -24,8 +24,8 @@ defmodule Jiraathome.SharedFile do
 
   @impl true
   def handle_call({:updates_after, sequence}, _from, state) do
-    updates = Documents.updates_after!(sequence)
-    {:reply, Enum.map(updates, &payload/1), state}
+    updates = Documents.list_updates_after!(sequence)
+    {:reply, Enum.map(updates, &to_client_update/1), state}
   end
 
   def handle_call({:save, token, data, name}, _from, state) do
@@ -33,16 +33,16 @@ defmodule Jiraathome.SharedFile do
     case Documents.get_update_by_token!(token, not_found_error?: false) do
       nil ->
         update = Documents.append_update!(%{token: token, data: data, author_name: name})
-        payload = payload(update)
-        Phoenix.PubSub.broadcast(Jiraathome.PubSub, @topic, {:file_updated, payload})
-        {:reply, {:ok, payload}, state}
+        client_update = to_client_update(update)
+        Phoenix.PubSub.broadcast(Jiraathome.PubSub, @topic, {:file_updated, client_update})
+        {:reply, {:ok, client_update}, state}
 
       update ->
-        {:reply, {:ok, payload(update)}, state}
+        {:reply, {:ok, to_client_update(update)}, state}
     end
   end
 
-  defp payload(update) do
+  defp to_client_update(update) do
     %{
       sequence: update.id,
       data: Base.encode64(update.data),
