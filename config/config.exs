@@ -7,8 +7,11 @@
 # General application configuration
 import Config
 
+config :ash, default_string_length_count: :codepoints
+
 config :jiraathome,
   ecto_repos: [Jiraathome.Repo],
+  ash_domains: [Jiraathome.Login],
   generators: [timestamp_type: :utc_datetime]
 
 # Configure the endpoint

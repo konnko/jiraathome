@@ -40,6 +40,9 @@ defmodule Jiraathome.MixProject do
   # Type `mix help deps` for examples and options.
   defp deps do
     [
+      {:ash_rate_limiter, "~> 1.0"},
+      {:ash, "~> 3.0"},
+      {:hammer, "~> 7.0"},
       {:phoenix, "~> 1.8.9"},
       {:phoenix_ecto, "~> 4.5"},
       {:ecto_sql, "~> 3.13"},

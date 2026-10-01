@@ -8,6 +8,7 @@ defmodule Jiraathome.Application do
   @impl true
   def start(_type, _args) do
     children = [
+      {Jiraathome.RateLimiter, clean_period: :timer.minutes(1)},
       Jiraathome.Repo,
       {Ecto.Migrator,
        repos: Application.fetch_env!(:jiraathome, :ecto_repos), skip: skip_migrations?()},
