@@ -4,10 +4,21 @@ import {LiveSocket} from "phoenix_live_view"
 import topbar from "../vendor/topbar"
 import {SharedFile} from "./shared_file"
 import {LocalTime} from "./local_time"
+import {ImagePreview} from "./image_preview"
+import {Attachments} from "./media_upload"
 import {CardDescription} from "./card_description"
 
 const Board = {
   mounted() {
+    this.el.addEventListener("click", event => {
+      const card = event.target.closest("[data-card-id]")
+      if (!card || event.target.closest("a, button, input, select, textarea, label")) return
+      if (this.draggedCardId || Date.now() < (this.ignoreClickUntil || 0)) return
+      if (window.getSelection()?.toString()) return
+      const button = card.querySelector(".card-content")
+      button.focus({preventScroll: true})
+      button.click()
+    })
     this.el.addEventListener("dragstart", event => {
       const card = event.target.closest("[data-card-id]")
       if (!card) return
@@ -21,7 +32,10 @@ const Board = {
         this.hideDragSource()
       }, 0)
     })
-    this.onDragEnd = () => this.clearDrag()
+    this.onDragEnd = () => {
+      this.ignoreClickUntil = Date.now() + 150
+      this.clearDrag()
+    }
     document.addEventListener("dragend", this.onDragEnd)
     this.el.addEventListener("dragover", event => {
       if (event.target.closest("[data-status]")) {
@@ -59,7 +73,7 @@ const Board = {
 
 const liveSocket = new LiveSocket("/live", Socket, {
   params: {_csrf_token: document.querySelector("meta[name='csrf-token']").content},
-  hooks: {Board, SharedFile, CardDescription, LocalTime},
+  hooks: {Board, SharedFile, CardDescription, LocalTime, Attachments, ImagePreview},
 })
 topbar.config({barColors: {0: "#a2504b"}})
 window.addEventListener("phx:page-loading-start", () => topbar.show(300))

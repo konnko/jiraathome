@@ -11,7 +11,8 @@ defmodule Jiraathome.MixProject do
       aliases: aliases(),
       deps: deps(),
       compilers: [:phoenix_live_view] ++ Mix.compilers(),
-      listeners: [Phoenix.CodeReloader]
+      listeners: [Phoenix.CodeReloader],
+      usage_rules: usage_rules()
     ]
   end
 
@@ -42,6 +43,10 @@ defmodule Jiraathome.MixProject do
     [
       {:ash_rate_limiter, "~> 1.0"},
       {:ash, "~> 3.0"},
+      {:ash_sqlite, "~> 0.2"},
+      {:ash_phoenix, "~> 2.0"},
+      {:oban, "~> 2.0"},
+      {:y_ex, "~> 0.10"},
       {:hammer, "~> 7.0"},
       {:phoenix, "~> 1.8.9"},
       {:phoenix_ecto, "~> 4.5"},
@@ -56,7 +61,8 @@ defmodule Jiraathome.MixProject do
       {:tailwind, "~> 0.5", runtime: Mix.env() == :dev},
       {:jason, "~> 1.2"},
       {:mdex, "~> 0.14.1"},
-      {:bandit, "~> 1.5"}
+      {:bandit, "~> 1.5"},
+      {:usage_rules, "~> 1.0", only: [:dev]}
     ]
   end
 
@@ -89,6 +95,32 @@ defmodule Jiraathome.MixProject do
         "format",
         "test",
         "cmd --cd assets npm test"
+      ]
+    ]
+  end
+
+  defp usage_rules do
+    # Example for those using claude.
+    [
+      file: "AGENTS.md",
+      skills: [
+        location: ".agents/skills",
+        # build skills that combine multiple usage rules
+        build: [
+          "ash-framework": [
+            # The description tells people how to use this skill.
+            description:
+              "Use this skill working with Ash Framework or any of its extensions. Always consult this when making any domain changes, features or fixes.",
+            # Include all Ash dependencies
+            usage_rules: [:ash, ~r/^ash_/]
+          ],
+          "phoenix-framework": [
+            description:
+              "Use this skill working with Phoenix Framework. Consult this when working with the web layer, controllers, views, liveviews etc.",
+            # Include all Phoenix dependencies
+            usage_rules: [:phoenix, ~r/^phoenix_/]
+          ]
+        ]
       ]
     ]
   end

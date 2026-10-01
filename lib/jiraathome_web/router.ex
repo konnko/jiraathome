@@ -1,9 +1,10 @@
 defmodule JiraathomeWeb.Router do
+  @moduledoc false
   use JiraathomeWeb, :router
   import JiraathomeWeb.Auth
 
   pipeline :browser do
-    plug :accepts, ["html"]
+    plug :accepts, ["html", "json"]
     plug :fetch_session
     plug :fetch_live_flash
     plug :put_root_layout, html: {JiraathomeWeb.Layouts, :root}
@@ -23,6 +24,9 @@ defmodule JiraathomeWeb.Router do
 
   scope "/", JiraathomeWeb do
     pipe_through [:browser, :authenticated]
+
+    post "/media", MediaController, :create
+    get "/media/:id", MediaController, :show
 
     live_session :board, on_mount: [{JiraathomeWeb.Auth, :default}] do
       live "/", BoardLive

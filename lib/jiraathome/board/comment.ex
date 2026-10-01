@@ -1,20 +1,54 @@
 defmodule Jiraathome.Board.Comment do
-  use Ecto.Schema
-  import Ecto.Changeset
+  use Ash.Resource,
+    otp_app: :jiraathome,
+    domain: Jiraathome.Board,
+    data_layer: AshSqlite.DataLayer,
+    notifiers: [Jiraathome.Board.Notifier]
 
-  schema "comments" do
-    field :body, :string
-    field :author_name, :string
-    belongs_to :card, Jiraathome.Board.Card
-    timestamps(type: :utc_datetime, updated_at: false)
+  sqlite do
+    table "comments"
+    repo Jiraathome.Repo
+
+    custom_indexes do
+      index [:card_id]
+    end
+
+    references do
+      reference :card, on_delete: :delete
+    end
   end
 
-  def changeset(comment, attrs) do
-    comment
-    |> cast(attrs, [:body])
-    |> update_change(:body, fn body ->
-      if is_binary(body), do: String.trim(body), else: body
-    end)
-    |> validate_required([:body, :author_name, :card_id], message: "Заполните поле")
+  actions do
+    defaults [:read]
+
+    read :for_card do
+      argument :card_id, :integer, allow_nil?: false
+      filter expr(card_id == ^arg(:card_id))
+      prepare build(sort: [id: :asc])
+    end
+
+    create :create do
+      accept [:body]
+      argument :card_id, :integer, allow_nil?: false
+      argument :author_name, :string, allow_nil?: false
+      change set_attribute(:card_id, arg(:card_id))
+      change set_attribute(:author_name, arg(:author_name))
+    end
+  end
+
+  attributes do
+    integer_primary_key :id
+
+    attribute :body, :string,
+      allow_nil?: false,
+      public?: true,
+      constraints: [min_length: 1, trim?: true]
+
+    attribute :author_name, :string, allow_nil?: false, public?: true
+    create_timestamp :inserted_at, type: :utc_datetime
+  end
+
+  relationships do
+    belongs_to :card, Jiraathome.Board.Card, attribute_type: :integer, allow_nil?: false
   end
 end

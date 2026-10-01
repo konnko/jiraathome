@@ -14,3 +14,4 @@ services:
       - data:/data
 volumes:
   data:
+    name: jiraathome_data

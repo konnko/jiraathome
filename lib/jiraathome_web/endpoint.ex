@@ -1,4 +1,5 @@
 defmodule JiraathomeWeb.Endpoint do
+  @moduledoc false
   use Phoenix.Endpoint, otp_app: :jiraathome
 
   # The session will be stored in the cookie and signed,
@@ -47,6 +48,7 @@ defmodule JiraathomeWeb.Endpoint do
 
   plug Plug.Parsers,
     parsers: [:urlencoded, :multipart, :json],
+    length: 21 * 1024 * 1024,
     pass: ["*/*"],
     json_decoder: Phoenix.json_library()
 

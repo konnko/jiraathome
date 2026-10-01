@@ -11,8 +11,20 @@ config :ash, default_string_length_count: :codepoints
 
 config :jiraathome,
   ecto_repos: [Jiraathome.Repo],
-  ash_domains: [Jiraathome.Login],
+  ash_domains: [Jiraathome.Login, Jiraathome.Board, Jiraathome.Files, Jiraathome.Documents],
   generators: [timestamp_type: :utc_datetime]
+
+config :jiraathome, Jiraathome.Repo,
+  default_transaction_mode: :immediate,
+  timeout: 15_000,
+  busy_timeout: 16_000
+
+config :jiraathome, Oban,
+  repo: Jiraathome.Repo,
+  engine: Oban.Engines.Lite,
+  notifier: Oban.Notifiers.Isolated,
+  queues: [maintenance: 1],
+  plugins: [{Oban.Plugins.Cron, crontab: [{"0 3 * * 0", Jiraathome.Files.CleanupJob}]}]
 
 # Configure the endpoint
 config :jiraathome, JiraathomeWeb.Endpoint,

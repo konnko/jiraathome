@@ -84,14 +84,14 @@ button, a, input, textarea, select { @apply focus-visible:outline-2 focus-visibl
 .status-done { background: #527568; }
 .add-card { @apply flex h-7 w-7 items-center justify-center rounded-md text-xl transition-colors hover:bg-base-300; }
 .column-cards { @apply flex flex-col gap-3; }
-.task-card { @apply overflow-hidden border border-base-300 bg-base-100 shadow-xs transition-shadow hover:shadow-md; }
+.task-card { @apply cursor-pointer overflow-hidden border border-base-300 bg-base-100 shadow-xs transition-shadow hover:shadow-md; }
 .card-content { @apply block w-full px-2 py-1.5 text-left; overflow-wrap: anywhere; }
 .card-content h3 { @apply text-sm font-semibold leading-relaxed; }
 .card-meta { @apply flex items-baseline justify-between gap-2 px-2 pb-2 pt-1 text-[10px] text-base-content/60; }
 .card-meta time { white-space: nowrap; }
 .card-author { @apply min-w-0 truncate text-right; }
 .editor-timestamps { @apply mb-5; }
-.editor-author { @apply mb-5 text-xs text-base-content/60; }
+.editor-author { @apply font-semibold; }
 .comments-section { @apply mt-7 flex flex-col gap-4 border-t border-base-300 pt-5; }
 .comments-section h3 { @apply text-sm font-semibold; }
 .comments-list { @apply flex flex-col gap-3; }
@@ -120,19 +120,14 @@ button, a, input, textarea, select { @apply focus-visible:outline-2 focus-visibl
 .editor-backdrop { @apply fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-neutral/30 p-4 backdrop-blur-xs; }
 .editor-panel { @apply my-auto w-full max-w-3xl p-6 shadow-xl; max-height: calc(100dvh - 2rem); overflow-y: auto; }
 .editor-header { @apply mb-6 flex items-center justify-between gap-3; }
-.editor-header h2 { @apply text-lg font-semibold; }
+.editor-header h2 { @apply min-w-0 text-sm font-normal; }
 .editor-form { @apply flex flex-col gap-5; }
-.card-description-editor { @apply rounded-lg border border-base-300; }
-.card-description-editor .milkdown {
-  --crepe-color-background: var(--color-base-100);
-  --crepe-color-primary: var(--color-primary);
-  --crepe-font-default: "Golos Text", Arial, sans-serif;
-  --crepe-font-title: "Golos Text", Arial, sans-serif;
-}
-.card-description-editor .milkdown > .ProseMirror { padding: 20px 32px; min-height: 180px; overflow-wrap: anywhere; }
+.card-description-editor { @apply rounded-lg border border-base-300 bg-white; }
+.card-description-editor .milkdown { background: #fff; }
+.card-description-editor .milkdown > .ProseMirror { padding: 12px; min-height: 140px; overflow-wrap: anywhere; outline: none; }
 .form-field { @apply flex flex-col gap-2; }
 .field-label { @apply text-xs font-semibold; }
-.input, .textarea, .select { @apply bg-base-100 text-sm; }
+.input, .textarea, .select { @apply bg-white text-sm; }
 .field-error { @apply text-xs text-error; }
 .editor-actions { @apply mt-2 flex flex-wrap items-center justify-between gap-2; }
 .save-actions { @apply ml-auto flex gap-2; }
@@ -192,3 +187,14 @@ button, a, input, textarea, select { @apply focus-visible:outline-2 focus-visibl
 @media (max-width: 640px) {
   .file-editor .milkdown > .ProseMirror { padding: 24px 20px 40px 84px; }
 }
+
+.card-editor-toolbar { @apply flex flex-wrap items-center gap-1 border-b border-base-300 p-2; }
+.card-editor-toolbar button { @apply rounded px-2 py-1 text-xs hover:bg-base-200; }
+
+.attachment-row { @apply flex items-center justify-between gap-2 text-sm; }
+.attachment-row a { @apply min-w-0 break-all underline; }
+
+.image-preview { margin: auto; padding: 0; border: 0; background: transparent; max-width: 94vw; max-height: 94dvh; overflow: visible; }
+.image-preview::backdrop { background: rgb(0 0 0 / 80%); }
+.image-preview img { display: block; max-width: 94vw; max-height: 88dvh; object-fit: contain; cursor: zoom-out; }
+.image-preview-close { display: block; margin-left: auto; margin-bottom: 8px; color: white; font-size: 24px; }

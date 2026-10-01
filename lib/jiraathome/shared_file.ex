@@ -1,9 +1,7 @@
 defmodule Jiraathome.SharedFile do
   @moduledoc "A single ordered, persistent stream of updates for the shared document."
   use GenServer
-  import Ecto.Query
-  alias Jiraathome.Repo
-  alias Jiraathome.SharedFile.Update
+  alias Jiraathome.Documents
 
   @topic "shared_file:updates"
 
@@ -26,15 +24,15 @@ defmodule Jiraathome.SharedFile do
 
   @impl true
   def handle_call({:updates_after, sequence}, _from, state) do
-    updates = Repo.all(from u in Update, where: u.id > ^sequence, order_by: u.id)
+    updates = Documents.updates_after!(sequence)
     {:reply, Enum.map(updates, &payload/1), state}
   end
 
   def handle_call({:save, token, data, name}, _from, state) do
     # A reconnect can resend an unacknowledged batch. Persist it only once.
-    case Repo.get_by(Update, token: token) do
+    case Documents.get_update_by_token!(token, not_found_error?: false) do
       nil ->
-        update = Repo.insert!(%Update{token: token, data: data, author_name: name})
+        update = Documents.append_update!(%{token: token, data: data, author_name: name})
         payload = payload(update)
         Phoenix.PubSub.broadcast(Jiraathome.PubSub, @topic, {:file_updated, payload})
         {:reply, {:ok, payload}, state}

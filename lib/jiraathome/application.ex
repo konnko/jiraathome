@@ -14,6 +14,7 @@ defmodule Jiraathome.Application do
        repos: Application.fetch_env!(:jiraathome, :ecto_repos), skip: skip_migrations?()},
       {Phoenix.PubSub, name: Jiraathome.PubSub},
       Jiraathome.SharedFile,
+      {Oban, Application.fetch_env!(:jiraathome, Oban)},
       JiraathomeWeb.Presence,
       # Start a worker by calling: Jiraathome.Worker.start_link(arg)
       # {Jiraathome.Worker, arg},

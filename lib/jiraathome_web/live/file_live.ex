@@ -46,6 +46,7 @@ defmodule JiraathomeWeb.FileLive do
         aria-label="Общий документ"
       >
         <div id="milkdown-editor" class="file-editor crepe" phx-update="ignore"></div>
+        <p id="media-upload-status" role="status" phx-update="ignore" class="text-muted"></p>
         <footer class="file-statusbar">
           <span id="file-status" class="text-muted" role="status" phx-update="ignore">Загрузка…</span>
           <div

@@ -32,3 +32,5 @@ config :phoenix,
   sort_verified_routes_query_params: true
 
 config :jiraathome, :password, "test-password"
+
+config :jiraathome, Oban, testing: :manual

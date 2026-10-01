@@ -25,6 +25,7 @@ ENV LANG=C.UTF-8 MIX_ENV=prod DATABASE_PATH=/data/jiraathome.db
 WORKDIR /app
 RUN mkdir /data && chown nobody:nogroup /data
 COPY --from=builder --chown=nobody:nogroup /app/_build/prod/rel/jiraathome ./
+VOLUME ["/data"]
 USER nobody
 EXPOSE 4000
 CMD ["bin/jiraathome", "start"]

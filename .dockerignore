@@ -10,3 +10,5 @@ erl_crash.dump
 test
 priv/static/assets
 priv/static/cache_manifest.json
+
+uploads

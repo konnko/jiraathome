@@ -10,7 +10,7 @@ defmodule JiraathomeWeb.Layouts do
   def workspace(assigns) do
     ~H"""
     <.app flash={@flash}>
-      <div class="workspace-page">
+      <div id="workspace" class="workspace-page" phx-hook="ImagePreview">
         <header class="page-header">
           <.link navigate={~p"/"} class="wordmark">jiraathome<span aria-hidden="true">.</span></.link>
           <nav class="page-nav" aria-label="Разделы">

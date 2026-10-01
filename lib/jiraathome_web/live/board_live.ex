@@ -1,4 +1,5 @@
 defmodule JiraathomeWeb.BoardLive do
+  @moduledoc false
   use JiraathomeWeb, :live_view
   alias Jiraathome.Board
   alias Jiraathome.Board.Card
@@ -11,7 +12,7 @@ defmodule JiraathomeWeb.BoardLive do
 
     {:ok,
      assign(socket,
-       cards: Board.list_cards(),
+       cards: Board.list_cards!(),
        columns: Board.columns(),
        editing: nil,
        form: nil,
@@ -23,20 +24,26 @@ defmodule JiraathomeWeb.BoardLive do
 
   @impl true
   def handle_event("new", params, socket) do
-    card = %Card{}
-    changeset = Board.change_card(card, %{status: params["status"] || "backlog"})
-    {:noreply, assign(socket, editing: card, form: to_form(changeset))}
+    card = %Card{status: params["status"] || "backlog"}
+
+    form =
+      AshPhoenix.Form.for_create(Card, :create, as: "card", post_process_errors: &form_error/3)
+
+    {:noreply, assign(socket, editing: card, form: to_form(form))}
   end
 
   def handle_event("edit", %{"id" => id}, socket) do
     card = Board.get_card!(id)
 
+    form =
+      AshPhoenix.Form.for_update(card, :update, as: "card", post_process_errors: &form_error/3)
+
     {:noreply,
      assign(socket,
        editing: card,
-       form: to_form(Board.change_card(card)),
-       comments: Board.list_comments(card),
-       comment_form: comment_form(card, socket.assigns.current_name)
+       form: to_form(form),
+       comments: Board.list_comments!(card.id),
+       comment_form: comment_form()
      )}
   end
 
@@ -45,53 +52,60 @@ defmodule JiraathomeWeb.BoardLive do
   end
 
   def handle_event("save", %{"card" => attrs}, socket) do
-    result =
-      case socket.assigns.editing do
-        %Card{id: nil} -> Board.create_card(attrs, socket.assigns.current_name)
-        card -> Board.update_card(Board.get_card!(card.id), attrs)
+    attrs =
+      Map.take(attrs, ["title", "description", "attachment_ids"])
+      |> Map.update("attachment_ids", [], fn ids ->
+        ids |> Enum.reject(&(&1 == "")) |> Enum.uniq()
+      end)
+
+    attrs =
+      if socket.assigns.editing.id do
+        attrs
+      else
+        attrs
+        |> Map.put("status", socket.assigns.editing.status)
+        |> Map.put("author_name", socket.assigns.current_name)
       end
 
-    case result do
+    case AshPhoenix.Form.submit(socket.assigns.form.source, params: attrs) do
       {:ok, _card} ->
-        {:noreply, assign(socket, editing: nil, form: nil, cards: Board.list_cards())}
+        {:noreply, assign(socket, editing: nil, form: nil, cards: Board.list_cards!())}
 
-      {:error, changeset} ->
-        {:noreply, assign(socket, form: to_form(changeset))}
+      {:error, form} ->
+        {:noreply, assign(socket, form: to_form(form))}
     end
   end
 
   def handle_event("move", %{"card_id" => id, "status" => status}, socket) do
-    {:ok, _card} = Board.update_card(Board.get_card!(id), %{status: status})
-    {:noreply, assign(socket, cards: Board.list_cards())}
+    Board.move_card!(Board.get_card!(id), status)
+    {:noreply, assign(socket, cards: Board.list_cards!())}
   end
 
   def handle_event("delete", _params, socket) do
-    Board.delete_card(Board.get_card!(socket.assigns.editing.id))
-    {:noreply, assign(socket, editing: nil, form: nil, cards: Board.list_cards())}
+    Board.delete_card!(Board.get_card!(socket.assigns.editing.id))
+    {:noreply, assign(socket, editing: nil, form: nil, cards: Board.list_cards!())}
   end
 
   def handle_event("validate_comment", %{"comment" => attrs}, socket) do
-    changeset =
-      %Comment{card_id: socket.assigns.editing.id, author_name: socket.assigns.current_name}
-      |> Board.change_comment(attrs)
-      |> Map.put(:action, :validate)
+    form =
+      AshPhoenix.Form.validate(socket.assigns.comment_form.source, comment_params(socket, attrs))
 
-    {:noreply, assign(socket, comment_form: to_form(changeset))}
+    {:noreply, assign(socket, comment_form: to_form(form))}
   end
 
   def handle_event("add_comment", %{"comment" => attrs}, socket) do
-    card = socket.assigns.editing
-
-    case Board.create_comment(card, attrs, socket.assigns.current_name) do
+    case AshPhoenix.Form.submit(socket.assigns.comment_form.source,
+           params: comment_params(socket, attrs)
+         ) do
       {:ok, _comment} ->
         {:noreply,
          assign(socket,
-           comments: Board.list_comments(card),
-           comment_form: comment_form(card, socket.assigns.current_name)
+           comments: Board.list_comments!(socket.assigns.editing.id),
+           comment_form: comment_form()
          )}
 
-      {:error, changeset} ->
-        {:noreply, assign(socket, comment_form: to_form(changeset))}
+      {:error, form} ->
+        {:noreply, assign(socket, comment_form: to_form(form))}
     end
   end
 
@@ -99,17 +113,35 @@ defmodule JiraathomeWeb.BoardLive do
   def handle_info(:board_updated, socket) do
     comments =
       case socket.assigns.editing do
-        %Card{id: id} = card when not is_nil(id) -> Board.list_comments(card)
+        %Card{id: id} when not is_nil(id) -> Board.list_comments!(id)
         _ -> []
       end
 
-    {:noreply, assign(socket, cards: Board.list_cards(), comments: comments)}
+    {:noreply, assign(socket, cards: Board.list_cards!(), comments: comments)}
   end
 
-  defp comment_form(card, name) do
-    %Comment{card_id: card.id, author_name: name}
-    |> Board.change_comment()
+  defp comment_form do
+    Comment
+    |> AshPhoenix.Form.for_create(:create, as: "comment", post_process_errors: &form_error/3)
     |> to_form()
+  end
+
+  defp comment_params(socket, attrs) do
+    attrs
+    |> Map.take(["body"])
+    |> Map.put("card_id", socket.assigns.editing.id)
+    |> Map.put("author_name", socket.assigns.current_name)
+  end
+
+  defp form_error(_form, _path, {field, message, vars}) do
+    translated =
+      if message in [
+           "is required",
+           "must be present",
+           "length must be greater than or equal to %{min}"
+         ], do: "Заполните поле", else: message
+
+    {field, translated, vars}
   end
 
   @impl true
@@ -158,6 +190,16 @@ defmodule JiraathomeWeb.BoardLive do
               <div :if={card.description not in [nil, ""]} class="card-description markdown-content">
                 {Phoenix.HTML.raw(JiraathomeWeb.Markdown.html(card.description))}
               </div>
+              <div :if={card.attachment_ids != []} class="card-attachments px-2 pb-2">
+                <a
+                  :for={file <- Jiraathome.Files.list_attachments!(card.attachment_ids)}
+                  href={Jiraathome.Files.Storage.url(file)}
+                  data-image-preview={if String.starts_with?(file.content_type, "image/"), do: "true"}
+                  target="_blank"
+                  rel="noopener"
+                  class="block text-xs underline"
+                >{file.name}</a>
+              </div>
               <footer class="card-meta">
                 <Time.local id={"card-time-#{card.id}"} timestamp={card.updated_at} />
                 <span class="card-author">{card.author_name || "не указан"}</span>
@@ -185,7 +227,13 @@ defmodule JiraathomeWeb.BoardLive do
         >
           <header class="editor-header">
             <h2 id="editor-title">
-              {if @editing.id, do: "Изменить карточку", else: "Новая карточка"}
+              <%= if @editing.id do %>
+                <span class="editor-author">{@editing.author_name || "не указан"}</span>
+                <span aria-hidden="true"> · </span>
+                <Time.local id="editing-updated-at" timestamp={@editing.updated_at} />
+              <% else %>
+                Новая карточка
+              <% end %>
             </h2>
             <button
               type="button"
@@ -194,12 +242,6 @@ defmodule JiraathomeWeb.BoardLive do
               aria-label="Закрыть"
             >✕</button>
           </header>
-          <p :if={@editing.id} class="editor-author">
-            Автор: {@editing.author_name || "не указан"}
-          </p>
-          <p :if={@editing.id} class="editor-timestamps text-muted">
-            Изменена <Time.local id="editing-updated-at" timestamp={@editing.updated_at} />
-          </p>
           <.form for={@form} id="card-form" phx-submit="save" class="editor-form">
             <.input
               field={@form[:title]}
@@ -224,12 +266,30 @@ defmodule JiraathomeWeb.BoardLive do
                 <div class="card-milkdown"></div>
               </div>
             </div>
-            <.input
-              field={@form[:status]}
-              type="select"
-              label="Столбец"
-              options={Enum.map(@columns, fn {value, label} -> {label, value} end)}
-            />
+            <div id="card-attachments" phx-hook="Attachments" phx-update="ignore" class="form-field">
+              <label class="field-label" for="attachment-picker">Вложения</label>
+              <input type="hidden" name="card[attachment_ids][]" value="" />
+              <div class="attachment-list">
+                <div
+                  :for={file <- Jiraathome.Files.list_attachments!(@editing.attachment_ids)}
+                  class="attachment-row"
+                >
+                  <input type="hidden" name="card[attachment_ids][]" value={file.id} />
+                  <a
+                    href={Jiraathome.Files.Storage.url(file)}
+                    data-image-preview={
+                      if String.starts_with?(file.content_type, "image/"), do: "true"
+                    }
+                    target="_blank"
+                    rel="noopener"
+                  >{file.name}</a>
+                  <button type="button" data-remove-attachment aria-label={"Убрать #{file.name}"}>✕</button>
+                </div>
+              </div>
+              <input id="attachment-picker" type="file" multiple class="file-input bg-white" />
+              <p class="text-muted">До 20 МБ на файл</p>
+              <p class="attachment-status text-muted" role="status"></p>
+            </div>
             <div class="editor-actions">
               <button
                 :if={@editing.id}

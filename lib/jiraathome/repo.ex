@@ -1,5 +1,5 @@
 defmodule Jiraathome.Repo do
-  use Ecto.Repo,
-    otp_app: :jiraathome,
-    adapter: Ecto.Adapters.SQLite3
+  use AshSqlite.Repo, otp_app: :jiraathome
+  @impl true
+  def write_transactions?, do: true
 end
