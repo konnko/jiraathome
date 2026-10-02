@@ -134,4 +134,32 @@ defmodule JiraathomeWeb.BoardLiveTest do
     view |> form("#card-form", card: %{title: "Изменён заголовок"}) |> render_submit()
     assert Board.get_card!(card.id).description == markdown
   end
+
+  test "a card link opens the card and closing it returns to the board", %{conn: conn} do
+    {:ok, card} = Board.add_card(:backlog, "Анна", %{title: "Ссылочная задача"})
+    {:ok, view, _html} = live(conn, ~p"/cards/#{card.id}")
+    assert has_element?(view, "#card_title[value='Ссылочная задача']")
+    assert has_element?(view, "#copy-card-link[data-path='/cards/#{card.id}']")
+    assert page_title(view) =~ "Ссылочная задача"
+
+    render_click(view, "cancel")
+    assert_patch(view, ~p"/")
+    refute has_element?(view, "#card-editor")
+
+    view |> element("#card-#{card.id} .card-content") |> render_click()
+    assert_patch(view, ~p"/cards/#{card.id}")
+    view |> form("#card-form", card: %{title: "Сохранено"}) |> render_submit()
+    assert_patch(view, ~p"/")
+    refute has_element?(view, "#card-editor")
+  end
+
+  test "a link to a deleted card shows the board with a notice", %{conn: conn} do
+    {:ok, card} = Board.add_card(:backlog, "Анна", %{title: "Удалённая"})
+    Board.delete_card!(card)
+
+    assert {:error, {:live_redirect, %{to: "/", flash: %{"error" => message}}}} =
+             live(conn, ~p"/cards/#{card.id}")
+
+    assert message =~ "Карточка не найдена"
+  end
 end

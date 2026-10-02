@@ -22,6 +22,33 @@ defmodule JiraathomeWeb.BoardLive do
   end
 
   @impl true
+  def handle_params(%{"id" => id}, _uri, socket) do
+    case Board.get_card(id) do
+      {:ok, card} ->
+        form = Board.form_to_edit_card(card, as: "card", post_process_errors: &form_error/3)
+
+        {:noreply,
+         assign(socket,
+           editing: card,
+           form: to_form(form),
+           comments: Board.list_comments!(card.id),
+           comment_form: comment_form(card, socket.assigns.current_name),
+           page_title: card.title
+         )}
+
+      {:error, _not_found} ->
+        {:noreply,
+         socket
+         |> put_flash(:error, "Карточка не найдена — возможно, её удалили")
+         |> push_patch(to: ~p"/")}
+    end
+  end
+
+  def handle_params(_params, _uri, socket) do
+    {:noreply, assign(socket, editing: nil, form: nil, page_title: "Доска задач")}
+  end
+
+  @impl true
   def handle_event("new", %{"status" => status}, socket) do
     form =
       Board.form_to_add_card(status, socket.assigns.current_name,
@@ -32,27 +59,14 @@ defmodule JiraathomeWeb.BoardLive do
     {:noreply, assign(socket, editing: %Card{status: status}, form: to_form(form))}
   end
 
-  def handle_event("edit", %{"id" => id}, socket) do
-    card = Board.get_card!(id)
-    form = Board.form_to_edit_card(card, as: "card", post_process_errors: &form_error/3)
-
-    {:noreply,
-     assign(socket,
-       editing: card,
-       form: to_form(form),
-       comments: Board.list_comments!(card.id),
-       comment_form: comment_form(card, socket.assigns.current_name)
-     )}
-  end
-
   def handle_event("cancel", _params, socket) do
-    {:noreply, assign(socket, editing: nil, form: nil)}
+    {:noreply, push_patch(socket, to: ~p"/")}
   end
 
   def handle_event("save", %{"card" => params}, socket) do
     case AshPhoenix.Form.submit(socket.assigns.form.source, params: params) do
       {:ok, _card} ->
-        {:noreply, assign(socket, editing: nil, form: nil, cards: Board.list_cards!())}
+        {:noreply, socket |> assign(cards: Board.list_cards!()) |> push_patch(to: ~p"/")}
 
       {:error, form} ->
         {:noreply, assign(socket, form: to_form(form))}
@@ -66,7 +80,7 @@ defmodule JiraathomeWeb.BoardLive do
 
   def handle_event("delete", _params, socket) do
     Board.delete_card!(Board.get_card!(socket.assigns.editing.id))
-    {:noreply, assign(socket, editing: nil, form: nil, cards: Board.list_cards!())}
+    {:noreply, socket |> assign(cards: Board.list_cards!()) |> push_patch(to: ~p"/")}
   end
 
   def handle_event("validate_comment", %{"comment" => params}, socket) do
@@ -154,8 +168,8 @@ defmodule JiraathomeWeb.BoardLive do
             >
               <button
                 class="card-content"
-                phx-click={JS.push_focus() |> JS.push("edit")}
-                phx-value-id={card.id}
+                tabindex="-1"
+                phx-click={JS.patch(~p"/cards/#{card.id}")}
               >
                 <h3>{card.title}</h3>
               </button>
@@ -190,7 +204,7 @@ defmodule JiraathomeWeb.BoardLive do
         aria-labelledby="editor-title"
         phx-window-keydown="cancel"
         phx-key="Escape"
-        phx-remove={JS.pop_focus()}
+        phx-remove={JS.pop_focus() |> JS.transition("editor-closing", time: 160)}
       >
         <.focus_wrap
           id="editor-focus"
@@ -207,12 +221,41 @@ defmodule JiraathomeWeb.BoardLive do
                 Новая карточка
               <% end %>
             </h2>
-            <button
-              type="button"
-              class="btn btn-ghost btn-sm"
-              phx-click="cancel"
-              aria-label="Закрыть"
-            >✕</button>
+            <div class="editor-header-actions">
+              <button
+                :if={@editing.id}
+                type="button"
+                id="copy-card-link"
+                class="btn btn-ghost btn-sm"
+                phx-hook=".CopyCardLink"
+                data-path={~p"/cards/#{@editing.id}"}
+              >
+                <span aria-hidden="true">🔗</span>
+                <span class="copy-card-link-label" role="status">Скопировать ссылку</span>
+              </button>
+              <script :type={Phoenix.LiveView.ColocatedHook} name=".CopyCardLink">
+                export default {
+                  mounted() {
+                    const label = this.el.querySelector(".copy-card-link-label")
+                    this.el.addEventListener("click", async () => {
+                      await navigator.clipboard.writeText(new URL(this.el.dataset.path, location.origin).href)
+                      label.textContent = "Ссылка скопирована"
+                      clearTimeout(this.resetTimer)
+                      this.resetTimer = setTimeout(() => label.textContent = "Скопировать ссылку", 2000)
+                    })
+                  },
+                  destroyed() {
+                    clearTimeout(this.resetTimer)
+                  }
+                }
+              </script>
+              <button
+                type="button"
+                class="btn btn-ghost btn-sm btn-square"
+                phx-click="cancel"
+                aria-label="Закрыть"
+              >✕</button>
+            </div>
           </header>
           <.form for={@form} id="card-form" phx-submit="save" class="editor-form">
             <.input
@@ -233,13 +276,15 @@ defmodule JiraathomeWeb.BoardLive do
                   id="card_description"
                   name={@form[:description].name}
                   class="textarea w-full"
-                  rows="6"
+                  rows="5"
                 >{Phoenix.HTML.Form.normalize_value("textarea", @form[:description].value)}</textarea>
                 <div class="card-milkdown"></div>
               </div>
             </div>
             <div id="card-attachments" phx-hook="Attachments" phx-update="ignore" class="form-field">
-              <label class="field-label" for="attachment-picker">Вложения</label>
+              <label class="field-label" for="attachment-picker">
+                Вложения <span class="field-hint">· до 20 МБ на файл</span>
+              </label>
               <input type="hidden" name="card[attachment_ids][]" value="" />
               <div class="attachment-list">
                 <div
@@ -255,11 +300,17 @@ defmodule JiraathomeWeb.BoardLive do
                     target="_blank"
                     rel="noopener"
                   >{file.name}</a>
-                  <button type="button" data-remove-attachment aria-label={"Убрать #{file.name}"}>✕</button>
+                  <button type="button" data-remove-attachment aria-label={"Убрать #{file.name}"}>
+                    ✕
+                  </button>
                 </div>
               </div>
-              <input id="attachment-picker" type="file" multiple class="file-input bg-white" />
-              <p class="text-muted">До 20 МБ на файл</p>
+              <input
+                id="attachment-picker"
+                type="file"
+                multiple
+                class="file-input file-input-sm w-full bg-white sm:w-auto"
+              />
               <p class="attachment-status text-muted" role="status"></p>
             </div>
             <div class="editor-actions">
@@ -267,13 +318,17 @@ defmodule JiraathomeWeb.BoardLive do
                 :if={@editing.id}
                 type="button"
                 id="delete-card"
-                class="btn btn-ghost text-error"
+                class="btn btn-ghost btn-sm text-error"
                 phx-click="delete"
                 data-confirm="Удалить карточку?"
               >Удалить</button>
               <div class="save-actions">
-                <button type="button" class="btn btn-ghost" phx-click="cancel">Отмена</button>
-                <button type="submit" class="btn btn-primary" phx-disable-with="Сохраняем…">Сохранить</button>
+                <button type="button" class="btn btn-ghost btn-sm" phx-click="cancel">Отмена</button>
+                <button
+                  type="submit"
+                  class="btn btn-primary btn-sm"
+                  phx-disable-with="Сохраняем…"
+                >Сохранить</button>
               </div>
             </div>
           </.form>
@@ -287,7 +342,7 @@ defmodule JiraathomeWeb.BoardLive do
               Комментарии <span class="column-count">{length(@comments)}</span>
             </h3>
             <p :if={@comments == []} class="text-muted">Пока нет комментариев.</p>
-            <ol class="comments-list">
+            <ol :if={@comments != []} class="comments-list">
               <li :for={comment <- @comments} id={"comment-#{comment.id}"} class="comment">
                 <div class="comment-heading">
                   <strong>{comment.author_name}</strong>
@@ -301,19 +356,19 @@ defmodule JiraathomeWeb.BoardLive do
               id="comment-form"
               phx-change="validate_comment"
               phx-submit="add_comment"
-              class="editor-form"
+              class="comment-form"
             >
               <.input
                 field={@comment_form[:body]}
                 type="textarea"
                 label="Комментарий"
-                rows="3"
+                rows="2"
                 placeholder="Напишите комментарий…"
                 required
               />
               <button
                 type="submit"
-                class="btn btn-primary self-end"
+                class="btn btn-primary btn-sm self-end"
                 phx-disable-with="Добавляем…"
               >
                 Добавить комментарий

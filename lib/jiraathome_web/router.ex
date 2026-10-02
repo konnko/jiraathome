@@ -30,6 +30,7 @@ defmodule JiraathomeWeb.Router do
 
     live_session :board, on_mount: [{JiraathomeWeb.Auth, :default}] do
       live "/", BoardLive
+      live "/cards/:id", BoardLive
       live "/file", FileLive
     end
   end

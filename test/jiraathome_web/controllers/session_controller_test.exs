@@ -56,6 +56,15 @@ defmodule JiraathomeWeb.SessionControllerTest do
     assert conn |> get(~p"/") |> redirected_to() == ~p"/login"
   end
 
+  test "a shared card link opens after logging in", %{conn: conn} do
+    conn = get(conn, ~p"/cards/42")
+    assert redirected_to(conn) == ~p"/login"
+
+    conn = conn |> recycle() |> post(~p"/login", %{password: "test-password", name: "Анна"})
+    assert redirected_to(conn) == ~p"/cards/42"
+    refute get_session(conn, :return_to)
+  end
+
   test "incorrect password does not grant access", %{conn: conn} do
     conn = post(conn, ~p"/login", %{password: "wrong", name: "Анна"})
     assert html_response(conn, 422) =~ "Неверный пароль"

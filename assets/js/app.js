@@ -7,6 +7,7 @@ import {LocalTime} from "./local_time"
 import {ImagePreview} from "./image_preview"
 import {Attachments} from "./media_upload"
 import {CardDescription} from "./card_description"
+import {hooks as colocatedHooks} from "phoenix-colocated/jiraathome"
 
 const Board = {
   mounted() {
@@ -15,9 +16,7 @@ const Board = {
       if (!card || event.target.closest("a, button, input, select, textarea, label")) return
       if (this.draggedCardId || Date.now() < (this.ignoreClickUntil || 0)) return
       if (window.getSelection()?.toString()) return
-      const button = card.querySelector(".card-content")
-      button.focus({preventScroll: true})
-      button.click()
+      card.querySelector(".card-content").click()
     })
     this.el.addEventListener("dragstart", event => {
       const card = event.target.closest("[data-card-id]")
@@ -119,7 +118,7 @@ const Board = {
 
 const liveSocket = new LiveSocket("/live", Socket, {
   params: {_csrf_token: document.querySelector("meta[name='csrf-token']").content},
-  hooks: {Board, SharedFile, CardDescription, LocalTime, Attachments, ImagePreview},
+  hooks: {...colocatedHooks, Board, SharedFile, CardDescription, LocalTime, Attachments, ImagePreview},
 })
 topbar.config({barColors: {0: "#a2504b"}})
 window.addEventListener("phx:page-loading-start", () => topbar.show(300))

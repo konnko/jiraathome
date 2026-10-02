@@ -7,7 +7,11 @@ defmodule JiraathomeWeb.Auth do
       # Refresh the persistent browser cookie; the signed session has no server-side expiry.
       configure_session(conn, renew: true)
     else
-      conn |> redirect(to: "/login") |> halt()
+      # Remember the requested page so a shared card link opens after logging in.
+      conn
+      |> put_session(:return_to, current_path(conn))
+      |> redirect(to: "/login")
+      |> halt()
     end
   end
 

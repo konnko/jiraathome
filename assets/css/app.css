@@ -61,48 +61,54 @@ button, a, input, textarea, select { @apply focus-visible:outline-2 focus-visibl
 .btn { @apply font-semibold; }
 .text-muted { color: #787065; @apply text-sm leading-relaxed; }
 .eyebrow { @apply text-xs font-semibold tracking-widest; color: #8d8173; }
-.workspace-page { @apply flex w-full flex-col bg-base-200 px-5 sm:px-10; height: 100dvh; }
+.workspace-page { @apply flex w-full flex-col bg-base-200 px-4 sm:px-6; height: 100dvh; }
 .workspace-page > .page-header { flex-shrink: 0; }
-.workspace-content { @apply flex min-h-0 flex-1 flex-col pb-4 pt-4; }
-.page-header { @apply flex flex-wrap items-center justify-between gap-4 border-b border-base-300 py-3; }
-.page-nav { @apply flex flex-wrap gap-4 text-sm; }
-.page-nav a[aria-current="page"] { @apply font-semibold text-primary; }
+.workspace-content { @apply flex min-h-0 flex-1 flex-col pb-3 pt-3; }
+.page-header { @apply flex flex-wrap items-center justify-between gap-4 border-b border-base-300 py-2.5; }
+.page-nav { @apply flex flex-wrap gap-1 text-sm; }
+.page-nav a { @apply rounded-md px-2.5 py-1 transition-colors hover:bg-base-300/60; }
+.page-nav a[aria-current="page"] { @apply bg-base-100 font-semibold text-primary shadow-xs; }
 .wordmark { @apply text-xl font-semibold tracking-tight; }
 .wordmark span { @apply text-primary; }
-.shared-label { @apply flex items-center gap-2 text-base; color: #000; }
+.shared-label { @apply flex items-center gap-2 text-sm font-semibold; }
 .presence-dot { @apply h-1.5 w-1.5 rounded-full bg-accent; }
-.board-grid { @apply grid gap-5 sm:grid-cols-2 xl:grid-cols-4; flex: 1; min-height: 0; overflow: auto; }
-.board-column { @apply min-w-0 rounded-xl border border-base-300/70 bg-base-300/20 p-3; min-height: 340px; }
-.column-header { @apply flex items-center justify-between gap-2 px-1 pb-4 pt-1; }
+/* One column per status side by side; narrow screens scroll the board sideways instead of wrapping into tall rows. */
+.board-grid { @apply grid gap-3; flex: 1; min-height: 0; overflow: auto; grid-template-columns: repeat(4, minmax(15rem, 1fr)); }
+@media (max-width: 640px) { .board-grid { grid-template-columns: 1fr; } }
+.board-column { @apply flex min-h-0 min-w-0 flex-col rounded-xl border border-base-300/70 bg-base-300/25 p-2; }
+.column-header { @apply flex shrink-0 items-center justify-between gap-2 pb-2 pl-1.5; }
 .column-title { @apply flex items-center gap-2; }
 .column-title h2 { @apply text-sm font-semibold; }
-.column-count { @apply ml-1 text-xs tabular-nums; color: #8d8173; }
+.column-count { @apply ml-0.5 rounded-full bg-base-300/70 px-1.5 text-[11px] font-semibold tabular-nums leading-[1.125rem]; color: #6e655b; }
 .status-dot { @apply h-2 w-2 rounded-full; }
 .status-backlog { background: #a29a8f; }
 .status-researching { background: #a77930; }
 .status-doing { background: #a2504b; }
 .status-done { background: #527568; }
-.add-card { @apply flex h-7 w-7 items-center justify-center rounded-md text-xl transition-colors hover:bg-base-300; }
-.column-cards { @apply flex flex-col gap-3; }
-.task-card { @apply cursor-pointer overflow-hidden border border-base-300 bg-base-100 shadow-xs transition-shadow hover:shadow-md; }
+.add-card { @apply flex h-7 w-7 items-center justify-center rounded-md text-lg text-base-content/60 transition-colors hover:bg-base-300 hover:text-base-content; }
+.column-cards { @apply -mx-1 flex min-h-16 flex-1 flex-col gap-2 overflow-y-auto px-1 pb-1; }
+.task-card { @apply shrink-0 cursor-pointer overflow-hidden rounded-lg border border-base-300 bg-base-100 shadow-xs transition-[box-shadow,border-color] hover:border-base-content/20 hover:shadow-md; }
 .task-card.is-drag-placeholder { @apply border-dashed border-base-content/25 bg-base-300/40 shadow-none; }
 .task-card.is-drag-placeholder > * { visibility: hidden; }
-.card-content { @apply block w-full px-2 py-1.5 text-left; overflow-wrap: anywhere; }
-.card-content h3 { @apply text-sm font-semibold leading-relaxed; }
-.card-meta { @apply flex items-baseline justify-between gap-2 px-2 pb-2 pt-1 text-[10px] text-base-content/60; }
+.card-content { @apply block w-full px-3 pb-1 pt-2 text-left outline-none focus-visible:outline-none; overflow-wrap: anywhere; }
+.card-content h3 { @apply text-sm font-semibold leading-snug; }
+.card-meta { @apply flex items-baseline justify-between gap-2 px-3 pb-2 pt-1 text-[11px] text-base-content/55; }
 .card-meta time { white-space: nowrap; }
 .card-author { @apply min-w-0 truncate text-right; }
 .editor-timestamps { @apply mb-5; }
-.editor-author { @apply font-semibold; }
-.comments-section { @apply mt-7 flex flex-col gap-4 border-t border-base-300 pt-5; }
+.editor-header-actions { @apply flex shrink-0 items-center gap-2; }
+.editor-author { @apply font-semibold text-base-content; }
+.comments-section { @apply mt-5 flex flex-col gap-3 border-t border-base-300 pt-4; }
 .comments-section h3 { @apply text-sm font-semibold; }
-.comments-list { @apply flex flex-col gap-3; }
-.comment { @apply rounded-lg bg-base-200 p-3; overflow-wrap: anywhere; }
+.comments-list { @apply flex flex-col gap-2; }
+.comment-form { @apply flex flex-col gap-2; }
+.comment-form .textarea { @apply min-h-16; }
+.comment { @apply rounded-lg bg-base-200 px-3 py-2; overflow-wrap: anywhere; }
 .comment-heading { @apply flex flex-wrap items-baseline justify-between gap-2 text-xs; }
 .comment-heading time { @apply text-[10px] text-base-content/60; }
-.comment-body { @apply mt-2 whitespace-pre-wrap text-sm leading-relaxed; }
-.card-description { @apply mx-2 mb-1 text-xs leading-relaxed; max-height: 14rem; overflow: auto; overflow-wrap: anywhere; color: #787065; }
-.markdown-content > * + * { margin-top: 0.65em; }
+.comment-body { @apply mt-1 whitespace-pre-wrap text-sm leading-normal; }
+.card-description { @apply mx-3 mb-0.5 text-xs leading-normal; max-height: 10rem; overflow: auto; overflow-wrap: anywhere; color: #787065; }
+.markdown-content > * + * { margin-top: 0.5em; }
 .markdown-content h1, .markdown-content h2, .markdown-content h3 { @apply font-semibold text-base-content; }
 .markdown-content h1 { font-size: 1.25em; }
 .markdown-content h2 { font-size: 1.15em; }
@@ -117,22 +123,42 @@ button, a, input, textarea, select { @apply focus-visible:outline-2 focus-visibl
 .markdown-content td, .markdown-content th { border: 1px solid var(--color-base-300); padding: 0.3em 0.5em; }
 .markdown-content input[type="checkbox"] { vertical-align: middle; margin-right: 0.4em; }
 .markdown-content img { max-width: 100%; height: auto; }
-.empty-column { @apply py-14 text-center text-xs; color: #9b9286; }
+.empty-column { @apply rounded-lg border border-dashed border-base-300 py-6 text-center text-xs; color: #9b9286; }
 .column-cards:has(.task-card) .empty-column { display: none; }
 .board-footer { @apply mt-7 text-xs leading-relaxed; color: #8d8173; }
 .editor-backdrop { @apply fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-neutral/30 p-4 backdrop-blur-xs; }
-.editor-panel { @apply my-auto w-full max-w-3xl p-6 shadow-xl; max-height: calc(100dvh - 2rem); overflow-y: auto; }
-.editor-header { @apply mb-6 flex items-center justify-between gap-3; }
-.editor-header h2 { @apply min-w-0 text-sm font-normal; }
-.editor-form { @apply flex flex-col gap-5; }
-.card-description-editor { @apply rounded-lg border border-base-300 bg-white; }
-.card-description-editor .milkdown { background: #fff; }
-.card-description-editor .milkdown > .ProseMirror { padding: 12px; min-height: 140px; overflow-wrap: anywhere; outline: none; }
-.form-field { @apply flex flex-col gap-2; }
-.field-label { @apply text-xs font-semibold; }
+.editor-panel { @apply my-auto w-full max-w-2xl p-5 shadow-xl; max-height: calc(100dvh - 2rem); overflow-y: auto; }
+/* Card editor: fade the backdrop and lift the panel in; reverse on close (phx-remove waits 160ms). */
+.editor-backdrop { animation: editor-backdrop-in 180ms ease-out; }
+.editor-backdrop .editor-panel { animation: editor-panel-in 220ms cubic-bezier(0.2, 0.8, 0.2, 1); }
+.editor-backdrop.editor-closing { pointer-events: none; animation: editor-backdrop-out 160ms ease-in forwards; }
+.editor-backdrop.editor-closing .editor-panel { animation: editor-panel-out 160ms ease-in forwards; }
+@keyframes editor-backdrop-in { from { opacity: 0; } }
+@keyframes editor-backdrop-out { to { opacity: 0; } }
+@keyframes editor-panel-in { from { opacity: 0; transform: translateY(12px) scale(0.98); } }
+@keyframes editor-panel-out { to { opacity: 0; transform: translateY(8px) scale(0.98); } }
+@media (prefers-reduced-motion: reduce) {
+  .editor-backdrop, .editor-backdrop .editor-panel { animation-duration: 1ms !important; }
+}
+.editor-header { @apply -mt-1 mb-3 flex items-center justify-between gap-3; }
+.editor-header h2 { @apply min-w-0 text-xs font-normal text-base-content/60; }
+.editor-header h2:not(:has(time)) { @apply text-sm font-semibold text-base-content; }
+.editor-form { @apply flex flex-col gap-4; }
+#card_title { @apply text-base font-semibold; }
+.card-description-editor { @apply overflow-hidden rounded-(--radius-field) border border-base-300 bg-white transition-colors focus-within:border-base-content/40; }
+.card-description-editor .milkdown { background: #fff; max-height: 50dvh; overflow-y: auto; }
+/* Crepe's global theme (loaded for the shared file) styles every .milkdown; reset it to compact card typography. */
+.card-description-editor .milkdown .ProseMirror { @apply text-sm leading-normal; padding: 10px 12px; min-height: 120px; overflow-wrap: anywhere; outline: none; }
+.card-description-editor .milkdown .ProseMirror p { padding: 0; line-height: inherit; }
+.card-description-editor .milkdown .ProseMirror ul, .card-description-editor .milkdown .ProseMirror ol { padding-left: 1.5em; }
+.card-description-editor .milkdown .ProseMirror li + li { margin-top: 0.15em; }
+.card-description-editor .milkdown .ProseMirror blockquote { padding-left: 0.75em; }
+.form-field { @apply flex flex-col gap-1.5; }
+.field-label { @apply text-xs font-semibold text-base-content/70; }
+.field-hint { @apply font-normal text-base-content/50; }
 .input, .textarea, .select { @apply bg-white text-sm; }
 .field-error { @apply text-xs text-error; }
-.editor-actions { @apply mt-2 flex flex-wrap items-center justify-between gap-2; }
+.editor-actions { @apply flex flex-wrap items-center justify-between gap-2 border-t border-base-300 pt-4; }
 .save-actions { @apply ml-auto flex gap-2; }
 .login-page { @apply flex min-h-dvh items-center justify-center px-5 py-10; }
 .login-card { @apply w-full max-w-md border border-base-300 p-8 sm:p-10; }
@@ -191,10 +217,13 @@ button, a, input, textarea, select { @apply focus-visible:outline-2 focus-visibl
   .file-editor .milkdown > .ProseMirror { padding: 24px 20px 40px 84px; }
 }
 
-.card-editor-toolbar { @apply flex flex-wrap items-center gap-1 border-b border-base-300 p-2; }
-.card-editor-toolbar button { @apply rounded px-2 py-1 text-xs hover:bg-base-200; }
+.card-editor-toolbar { @apply flex flex-wrap items-center gap-0.5 border-b border-base-300 bg-base-100 px-1.5 py-1; }
+.card-editor-toolbar button { @apply h-7 min-w-7 rounded-md px-1.5 text-xs text-base-content/75 transition-colors hover:bg-base-300/60 hover:text-base-content; }
 
-.attachment-row { @apply flex items-center justify-between gap-2 text-sm; }
+.attachment-list { @apply flex flex-col gap-1; }
+.attachment-row { @apply flex items-center justify-between gap-2 rounded-md bg-base-200 py-1 pl-2.5 pr-1 text-sm; }
+.attachment-row button { @apply flex h-6 w-6 shrink-0 items-center justify-center rounded text-xs text-base-content/60 transition-colors hover:bg-base-300 hover:text-error; }
+.attachment-status:empty { display: none; }
 .attachment-row a { @apply min-w-0 break-all underline; }
 
 .image-preview { margin: auto; padding: 0; border: 0; background: transparent; max-width: 94vw; max-height: 94dvh; overflow: visible; }

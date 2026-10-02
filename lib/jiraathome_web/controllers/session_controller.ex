@@ -19,11 +19,14 @@ defmodule JiraathomeWeb.SessionController do
     else
       case Jiraathome.Login.check_password(to_string(:inet.ntoa(conn.remote_ip)), password) do
         {:ok, true} ->
+          return_to = get_session(conn, :return_to) || ~p"/"
+
           conn
           |> configure_session(renew: true)
+          |> delete_session(:return_to)
           |> put_session(:authenticated, true)
           |> put_session(:name, name)
-          |> redirect(to: ~p"/")
+          |> redirect(to: return_to)
 
         {:ok, false} ->
           conn
